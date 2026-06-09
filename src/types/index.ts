@@ -95,6 +95,11 @@ export interface RepairOrder {
   updateTime: string;
   handler?: string;
   timelineLogs?: TimelineLog[];
+  urgeCount?: number;
+  lastUrgeTime?: string;
+  rating?: number;
+  evaluation?: string;
+  evaluatedTime?: string;
 }
 
 export interface ParkingSpot {

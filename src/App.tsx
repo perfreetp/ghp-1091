@@ -5,6 +5,7 @@ import Access from "@/pages/Access";
 import TempAccess from "@/pages/Access/TempAccess";
 import Visitor from "@/pages/Visitor";
 import VisitorReserve from "@/pages/Visitor/Reserve";
+import VisitorDetail from "@/pages/Visitor/Detail";
 import Meeting from "@/pages/Meeting";
 import MeetingDetail from "@/pages/Meeting/Detail";
 import MyBookings from "@/pages/Meeting/MyBookings";
@@ -37,6 +38,7 @@ export default function App() {
 
           <Route path="/visitor" element={<Visitor />} />
           <Route path="/visitor/reserve" element={<VisitorReserve />} />
+          <Route path="/visitor/:id" element={<VisitorDetail />} />
 
           <Route path="/meeting" element={<Meeting />} />
           <Route path="/meeting/:id" element={<MeetingDetail />} />

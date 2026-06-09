@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -35,6 +35,8 @@ const statusIconMap: Record<string, React.ReactNode> = {
 
 export default function MyBookings() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlightId");
   const { getMyBookings, cancelBooking, updateBooking, getRoomBookings, rooms } =
     useMeetingStore();
   const bookings = getMyBookings();
@@ -72,6 +74,35 @@ export default function MyBookings() {
   }, [bookings, now]);
 
   const displayList = activeTab === "upcoming" ? upcoming : history;
+
+  useEffect(() => {
+    if (highlightId) {
+      const findHigh = bookings.find((b) => b.id === highlightId);
+      if (findHigh) {
+        const isHistory =
+          findHigh.status === "cancelled" ||
+          new Date(`${findHigh.date}T${findHigh.startTime}`) < now;
+        if (isHistory && activeTab === "upcoming") {
+          setActiveTab("history");
+        }
+        if (!isHistory && activeTab === "history") {
+          setActiveTab("upcoming");
+        }
+      }
+    }
+  }, [highlightId, bookings, activeTab, now]);
+
+  useEffect(() => {
+    if (highlightId) {
+      const timer = setTimeout(() => {
+        document.getElementById(highlightId)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightId, bookings, activeTab]);
 
   const handleCancelConfirm = () => {
     if (cancelModalBooking) {
@@ -193,9 +224,12 @@ export default function MyBookings() {
           return (
             <div
               key={booking.id}
+              id={booking.id}
               className={cn(
                 "bg-white rounded-2xl shadow-sm overflow-hidden transition-all",
-                isCancelled && "opacity-75"
+                isCancelled && "opacity-75",
+                booking.id === highlightId &&
+                  "ring-2 ring-primary-400 ring-offset-2 bg-primary-50 animate-pulse"
               )}
             >
               <div className="p-4">

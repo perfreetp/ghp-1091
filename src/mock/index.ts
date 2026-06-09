@@ -241,6 +241,8 @@ export const mockRepairOrders: RepairOrder[] = [
     createTime: "2026-06-09 10:15",
     updateTime: "2026-06-09 11:00",
     handler: "李师傅",
+    urgeCount: 0,
+    lastUrgeTime: undefined,
     timelineLogs: [
       { status: "submitted", handler: "系统", time: "2026-06-09 10:15" },
       { status: "accepted", handler: "王师傅", time: addHours("2026-06-09 10:15", 1) },
@@ -258,6 +260,11 @@ export const mockRepairOrders: RepairOrder[] = [
     createTime: "2026-06-07 14:30",
     updateTime: "2026-06-07 17:00",
     handler: "王师傅",
+    urgeCount: 0,
+    lastUrgeTime: undefined,
+    rating: 4,
+    evaluation: "师傅上门很快，处理很专业，空调现在制冷效果好多了，赞一个！",
+    evaluatedTime: addHours("2026-06-07 14:30", 48),
     timelineLogs: [
       { status: "submitted", handler: "系统", time: "2026-06-07 14:30" },
       { status: "accepted", handler: "王师傅", time: addHours("2026-06-07 14:30", 1) },
@@ -275,6 +282,8 @@ export const mockRepairOrders: RepairOrder[] = [
     status: "submitted",
     createTime: "2026-06-09 15:00",
     updateTime: "2026-06-09 15:00",
+    urgeCount: 0,
+    lastUrgeTime: undefined,
     timelineLogs: [
       { status: "submitted", handler: "系统", time: "2026-06-09 15:00" },
     ],

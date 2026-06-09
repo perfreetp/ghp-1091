@@ -62,14 +62,18 @@ export default function Messages() {
   const getNavigatePath = (msg: SystemMessage): string => {
     switch (msg.type) {
       case "approval":
-        return "/access";
+        return msg.relatedId
+          ? `/access?tab=temp&highlightId=${msg.relatedId}`
+          : "/access?tab=temp";
       case "notice":
-        if (msg.content.includes("访客")) {
-          return "/visitor";
+        if (msg.content.includes("访客") && msg.relatedId) {
+          return `/visitor/${msg.relatedId}`;
         }
         return "/home";
       case "booking":
-        return "/meeting/my";
+        return msg.relatedId
+          ? `/meeting/my?highlightId=${msg.relatedId}`
+          : "/meeting/my";
       case "repair":
         if (msg.relatedId) {
           return `/repair/${msg.relatedId}`;

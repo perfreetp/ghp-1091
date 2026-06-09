@@ -18,6 +18,8 @@ interface RepairState {
   feedbacks: ComfortFeedback[];
   addOrder: (order: Omit<RepairOrder, "id" | "createTime" | "updateTime" | "status" | "reporter">) => RepairOrder;
   updateOrder: (id: string, updates: Partial<RepairOrder>) => void;
+  urgeOrder: (id: string) => RepairOrder | undefined;
+  evaluateOrder: (id: string, rating: number, evaluation: string) => void;
   addFeedback: (feedback: Omit<ComfortFeedback, "id" | "createTime" | "status">) => void;
   getActiveOrders: () => RepairOrder[];
 }
@@ -35,6 +37,8 @@ export const useRepairStore = create<RepairState>((set, get) => ({
       reporter: "张明",
       createTime,
       updateTime: createTime,
+      urgeCount: 0,
+      lastUrgeTime: undefined,
       timelineLogs: [
         { status: "submitted", handler: "系统", time: createTime },
       ],
@@ -57,6 +61,59 @@ export const useRepairStore = create<RepairState>((set, get) => ({
       storage.set("repairOrders", orders);
       return { orders };
     }),
+
+  urgeOrder: (id) => {
+    const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+    let updatedOrder: RepairOrder | undefined;
+    set((state) => {
+      const orders = state.orders.map((o) => {
+        if (o.id === id) {
+          const newUrgeCount = (o.urgeCount || 0) + 1;
+          const newStatus = ["submitted", "accepted"].includes(o.status) ? "processing" : o.status;
+          updatedOrder = {
+            ...o,
+            urgeCount: newUrgeCount,
+            lastUrgeTime: now,
+            status: newStatus as RepairOrder["status"],
+            updateTime: now,
+            timelineLogs: newStatus !== o.status
+              ? [...(o.timelineLogs || []), { status: "processing", handler: "系统（催单）", time: now }]
+              : o.timelineLogs,
+          };
+          return updatedOrder;
+        }
+        return o;
+      });
+      storage.set("repairOrders", orders);
+      return { orders };
+    });
+    return updatedOrder;
+  },
+
+  evaluateOrder: (id, rating, evaluation) => {
+    const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+    set((state) => {
+      const orders = state.orders.map((o) => {
+        if (o.id === id) {
+          return {
+            ...o,
+            rating,
+            evaluation,
+            evaluatedTime: now,
+            status: "evaluated" as RepairOrder["status"],
+            updateTime: now,
+            timelineLogs: [
+              ...(o.timelineLogs || []),
+              { status: "evaluated", handler: "张明（自己）", time: now },
+            ],
+          };
+        }
+        return o;
+      });
+      storage.set("repairOrders", orders);
+      return { orders };
+    });
+  },
 
   addFeedback: (feedback) =>
     set((state) => {

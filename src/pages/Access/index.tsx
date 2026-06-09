@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
 import { QrCode, FileCheck, User, Plus, RefreshCw, Clock, MapPin } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -19,7 +19,10 @@ const ACCESS_AREAS = ["A座1号门", "A座2号门", "B座餐饮区入口", "停�
 
 export default function Access() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabKey>("qrcode");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") as TabKey | null;
+  const highlightId = searchParams.get("highlightId");
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab === "temp" ? "temp" : "qrcode");
   const { qrToken, lastRefresh, refreshQr, tempRequests, records } = useAccessStore();
   const [countdown, setCountdown] = useState(60);
 
@@ -39,6 +42,15 @@ export default function Access() {
     }, 1000);
     return () => clearInterval(timer);
   }, [refreshQr]);
+
+  useEffect(() => {
+    if (highlightId && activeTab === "temp") {
+      const timer = setTimeout(() => {
+        document.getElementById(highlightId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightId, activeTab, tempRequests]);
 
   const renderQrCodeTab = () => (
     <div className="flex flex-col items-center px-6 pt-8 pb-6">
@@ -99,7 +111,14 @@ export default function Access() {
         </div>
       ) : (
         tempRequests.map((req) => (
-          <div key={req.id} className="card card-hover p-4 animate-fade-in">
+          <div
+            key={req.id}
+            id={req.id}
+            className={cn(
+              "card card-hover p-4 animate-fade-in",
+              req.id === highlightId && "ring-2 ring-primary-400 bg-primary-50 animate-pulse"
+            )}
+          >
             <div className="flex items-start justify-between mb-3">
               <div>
                 <p className="font-semibold text-gray-800">{req.area}</p>
