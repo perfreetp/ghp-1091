@@ -4,6 +4,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { User, Phone, Calendar, Car, FileText, Copy, Share2, Check, ArrowLeft } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useVisitorStore } from "@/store/useVisitorStore";
+import { useMessageStore } from "@/store/useMessageStore";
 import { cn } from "@/lib/utils";
 import type { VisitorReservation } from "@/types";
 
@@ -37,6 +38,7 @@ function getDefaultVisitTime(): string {
 export default function Reserve() {
   const navigate = useNavigate();
   const { addVisitor } = useVisitorStore();
+  const addMessage = useMessageStore((s) => s.addMessage);
 
   const [visitorName, setVisitorName] = useState("");
   const [visitorPhone, setVisitorPhone] = useState("");
@@ -82,6 +84,13 @@ export default function Reserve() {
 
       setSubmitting(false);
       setNewVisitor(visitor);
+
+      addMessage({
+        type: "notice",
+        title: "访客预约成功",
+        content: `您预约的访客${visitor.visitorName}将于${visitor.visitTime}来访，到访码：${visitor.visitCode}`,
+        relatedId: visitor.id,
+      });
     }, 600);
   };
 

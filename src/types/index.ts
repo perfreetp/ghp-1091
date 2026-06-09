@@ -118,6 +118,7 @@ export interface ExpressDelivery {
   receiver: string;
   arriveTime: string;
   status: "pending" | "picked";
+  pickedTime?: string;
 }
 
 export interface SystemMessage {

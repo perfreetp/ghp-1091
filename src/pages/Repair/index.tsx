@@ -123,7 +123,7 @@ export default function RepairIndex() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-800">报修进度</h2>
           <button
-            onClick={() => {}}
+            onClick={() => navigate("/repair/list")}
             className="text-xs text-primary-500 font-medium"
           >
             查看全部
@@ -138,8 +138,9 @@ export default function RepairIndex() {
                 return (
                   <div
                     key={order.id}
+                    onClick={() => navigate(`/repair/${order.id}`)}
                     className={cn(
-                      "relative",
+                      "relative cursor-pointer hover:opacity-80 active:opacity-70 transition-opacity",
                       orderIndex < displayOrders.length - 1 && "pb-2"
                     )}
                   >

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { repairCategories, useRepairStore } from "@/store/useRepairStore";
+import { useMessageStore } from "@/store/useMessageStore";
 import { cn } from "@/lib/utils";
 import { mockUser } from "@/mock";
 
@@ -33,6 +34,7 @@ export default function RepairSubmit() {
   const category = repairCategories.find((c) => c.id === categoryId);
 
   const { addOrder } = useRepairStore();
+  const addMessage = useMessageStore((s) => s.addMessage);
 
   const [images, setImages] = useState<string[]>([]);
   const [location, setLocation] = useState(`${mockUser.floor} 公共区域`);
@@ -73,12 +75,20 @@ export default function RepairSubmit() {
 
   const handleSubmit = () => {
     if (!canSubmit || !category) return;
-    addOrder({
+    const order = addOrder({
       category: category.name,
       description: description.trim(),
       images,
       location: location.trim(),
     });
+
+    addMessage({
+      type: "repair",
+      title: "报修单已提交",
+      content: `您提交的${category.name}报修已受理，我们将尽快安排处理。位置：${location.trim()}`,
+      relatedId: order.id,
+    });
+
     navigate("/repair");
   };
 

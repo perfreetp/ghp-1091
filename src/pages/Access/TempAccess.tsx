@@ -4,6 +4,7 @@ import { Clock, MapPin, FileText, Check } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useAccessStore } from "@/store/useAccessStore";
 import { useUserStore } from "@/store/useUserStore";
+import { useMessageStore } from "@/store/useMessageStore";
 import { cn } from "@/lib/utils";
 
 const AREA_OPTIONS = [
@@ -32,6 +33,7 @@ export default function TempAccess() {
   const navigate = useNavigate();
   const { addTempRequest } = useAccessStore();
   const { user } = useUserStore();
+  const addMessage = useMessageStore((s) => s.addMessage);
   const [startTime, setStartTime] = useState(formatDateTimeLocal(new Date()));
   const [endTime, setEndTime] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
@@ -69,12 +71,19 @@ export default function TempAccess() {
     setSubmitting(true);
 
     setTimeout(() => {
-      addTempRequest({
+      const newReq = addTempRequest({
         applicant: user?.name || "当前用户",
         startTime: startTime.replace("T", " "),
         endTime: endTime.replace("T", " "),
         area: selectedAreas.join("、"),
         reason: reason.trim(),
+      });
+
+      addMessage({
+        type: "approval",
+        title: "临时通行申请已提交",
+        content: `您申请的区域临时通行申请已提交，请等待审批。通行区域：${selectedAreas.join("、")}，时间：${startTime.replace("T", " ")}~${endTime.replace("T", " ")}`,
+        relatedId: newReq.id,
       });
 
       setSubmitting(false);

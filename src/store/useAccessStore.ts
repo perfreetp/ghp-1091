@@ -11,7 +11,7 @@ interface AccessState {
   lastRefresh: number;
   refreshQr: () => void;
   addRecord: (record: Omit<AccessRecord, "id">) => void;
-  addTempRequest: (req: Omit<TempAccessRequest, "id" | "createTime" | "status">) => void;
+  addTempRequest: (req: Omit<TempAccessRequest, "id" | "createTime" | "status">) => TempAccessRequest;
 }
 
 export const useAccessStore = create<AccessState>((set) => ({
@@ -34,16 +34,18 @@ export const useAccessStore = create<AccessState>((set) => ({
       return { records };
     }),
 
-  addTempRequest: (req) =>
+  addTempRequest: (req) => {
+    const newReq: TempAccessRequest = {
+      ...req,
+      id: generateOrderId("TAR"),
+      status: "pending",
+      createTime: new Date().toISOString().slice(0, 16).replace("T", " "),
+    };
     set((state) => {
-      const newReq: TempAccessRequest = {
-        ...req,
-        id: generateOrderId("TAR"),
-        status: "pending",
-        createTime: new Date().toISOString().slice(0, 16).replace("T", " "),
-      };
       const tempRequests = [newReq, ...state.tempRequests];
       storage.set("tempRequests", tempRequests);
       return { tempRequests };
-    }),
+    });
+    return newReq;
+  },
 }));

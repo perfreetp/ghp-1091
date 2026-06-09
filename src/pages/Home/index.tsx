@@ -31,7 +31,7 @@ const quickActions = [
   { name: "会议室", icon: CalendarDays, path: "/meeting", bg: "bg-accent-500", ring: "ring-accent-100" },
   { name: "报修服务", icon: Wrench, path: "/repair", bg: "bg-purple-500", ring: "ring-purple-100" },
   { name: "停车缴费", icon: Car, path: "/parking", bg: "bg-pink-500", ring: "ring-pink-100" },
-  { name: "快递取件", icon: Package, path: "#express", bg: "bg-amber-500", ring: "ring-amber-100" },
+  { name: "快递取件", icon: Package, path: "/express", bg: "bg-amber-500", ring: "ring-amber-100" },
   { name: "室内导航", icon: MapPin, path: "/home/navigation", bg: "bg-teal-500", ring: "ring-teal-100" },
   { name: "应急疏散", icon: AlertTriangle, path: "/home/evacuation", bg: "bg-danger-500", ring: "ring-danger-100" },
 ];
@@ -47,10 +47,10 @@ export default function Home() {
   const { user } = useUserStore();
   const { announcements } = useAnnouncementStore();
   const deliveries = useMessageStore((s) => s.deliveries);
+  const getUnreadCount = useMessageStore((s) => s.getUnreadCount);
   const pendingDeliveries = deliveries.filter((d) => d.status === "pending");
 
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [expressOpen, setExpressOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,11 +76,7 @@ export default function Home() {
     .sort((a, b) => a.estimatedTime - b.estimatedTime)[0];
 
   const handleAction = (action: (typeof quickActions)[number]) => {
-    if (action.path.startsWith("#")) {
-      setExpressOpen(true);
-    } else {
-      navigate(action.path);
-    }
+    navigate(action.path);
   };
 
   const callEmergency = () => {
@@ -109,9 +105,9 @@ export default function Home() {
               className="relative w-10 h-10 rounded-full bg-white/15 backdrop-blur flex items-center justify-center active:bg-white/25 transition-colors"
             >
               <Bell size={20} className="text-white" />
-              {pendingDeliveries.length > 0 && (
+              {getUnreadCount() > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-accent-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
-                  {pendingDeliveries.length}
+                  {getUnreadCount()}
                 </span>
               )}
             </button>
@@ -312,10 +308,10 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => navigate("/profile/messages")}
+              onClick={() => navigate("/express")}
               className="w-full mt-3 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-medium active:bg-amber-600 transition-colors"
             >
-              查看全部快递
+              去取件
             </button>
           </div>
         )}

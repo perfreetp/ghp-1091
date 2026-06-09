@@ -1,5 +1,6 @@
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Users, Projector, Presentation, Video, ChevronRight, ClipboardList } from "lucide-react";
+import { Calendar, Users, Projector, Presentation, Video, ChevronRight, ClipboardList, Search, X } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useMeetingStore } from "@/store/useMeetingStore";
 import { getDateLabel, formatDate } from "@/utils/date";
@@ -25,6 +26,23 @@ export default function MeetingIndex() {
   const navigate = useNavigate();
   const { filters, setFilters, getFilteredRooms } = useMeetingStore();
   const rooms = getFilteredRooms();
+  const [showSearch, setShowSearch] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showSearch && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showSearch]);
+
+  const toggleSearch = () => {
+    if (!showSearch) {
+      setShowSearch(true);
+    } else {
+      setShowSearch(false);
+      setFilters({ keyword: "" });
+    }
+  };
 
   const dateList = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -52,16 +70,57 @@ export default function MeetingIndex() {
     <div className="min-h-screen bg-gray-50 pb-8">
       <PageHeader
         title="会议室"
-        showSearch
         rightContent={
-          <button
-            onClick={() => navigate("/meeting/my")}
-            className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-          >
-            <ClipboardList size={20} className="text-gray-600" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleSearch}
+              className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            >
+              <Search size={20} className="text-gray-600" />
+            </button>
+            <button
+              onClick={() => navigate("/meeting/my")}
+              className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            >
+              <ClipboardList size={20} className="text-gray-600" />
+            </button>
+          </div>
         }
       />
+
+      <div
+        className={cn(
+          "sticky top-14 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 overflow-hidden transition-all duration-300 ease-out",
+          showSearch ? "max-h-24 opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <div className="px-4 py-3">
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Search size={18} className="text-gray-400" />
+            </div>
+            <input
+              ref={inputRef}
+              type="text"
+              value={filters.keyword}
+              onChange={(e) => setFilters({ keyword: e.target.value })}
+              placeholder="搜索名称/楼层/设备，如：创新厅/18F/投影仪"
+              className="w-full h-11 pl-10 pr-12 bg-gray-50 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-primary-300 transition-shadow"
+            />
+            <button
+              onClick={toggleSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200 active:bg-gray-300 transition-colors"
+            >
+              <X size={16} className="text-gray-500" />
+            </button>
+          </div>
+          {filters.keyword && (
+            <div className="mt-2 text-xs text-gray-500">
+              找到 <span className="text-primary-500 font-medium">{rooms.length}</span> 个匹配的会议室
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="px-4 pt-4">
         <div className="bg-white rounded-2xl p-4 shadow-sm">

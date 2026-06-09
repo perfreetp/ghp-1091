@@ -10,6 +10,8 @@ import MeetingDetail from "@/pages/Meeting/Detail";
 import MyBookings from "@/pages/Meeting/MyBookings";
 import Repair from "@/pages/Repair";
 import RepairSubmit from "@/pages/Repair/Submit";
+import RepairList from "@/pages/Repair/List";
+import RepairDetail from "@/pages/Repair/Detail";
 import ComfortFeedback from "@/pages/Repair/Comfort";
 import Parking from "@/pages/Parking";
 import ParkingPay from "@/pages/Parking/Pay";
@@ -18,6 +20,7 @@ import Satisfaction from "@/pages/Profile/Satisfaction";
 import Messages from "@/pages/Profile/Messages";
 import Evacuation from "@/pages/Home/Evacuation";
 import IndoorNav from "@/pages/Home/IndoorNav";
+import Express from "@/pages/Express";
 
 export default function App() {
   return (
@@ -41,10 +44,14 @@ export default function App() {
 
           <Route path="/repair" element={<Repair />} />
           <Route path="/repair/submit" element={<RepairSubmit />} />
+          <Route path="/repair/list" element={<RepairList />} />
+          <Route path="/repair/:id" element={<RepairDetail />} />
           <Route path="/repair/comfort" element={<ComfortFeedback />} />
 
           <Route path="/parking" element={<Parking />} />
           <Route path="/parking/pay" element={<ParkingPay />} />
+
+          <Route path="/express" element={<Express />} />
 
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/satisfaction" element={<Satisfaction />} />

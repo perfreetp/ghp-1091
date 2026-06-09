@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useMeetingStore } from "@/store/useMeetingStore";
+import { useMessageStore } from "@/store/useMessageStore";
 import { generateTimeSlots } from "@/utils/date";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,7 @@ export default function MeetingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { rooms, filters, getRoomBookings, addBooking } = useMeetingStore();
+  const addMessage = useMessageStore((s) => s.addMessage);
   const room = rooms.find((r) => r.id === id);
 
   const [imageIndex, setImageIndex] = useState(0);
@@ -106,7 +108,7 @@ export default function MeetingDetail() {
 
   const handleSubmit = () => {
     if (!room || !startTime || !endTime || !title.trim()) return;
-    addBooking({
+    const booking = addBooking({
       roomId: room.id,
       roomName: room.name,
       date: filters.date,
@@ -115,6 +117,14 @@ export default function MeetingDetail() {
       title: title.trim(),
       attendees,
     });
+
+    addMessage({
+      type: "booking",
+      title: "会议室预订成功",
+      content: `您已成功预订${room.name}（${filters.date} ${startTime}-${endTime}），主题：${title.trim() || "未命名会议"}`,
+      relatedId: booking.id,
+    });
+
     navigate("/meeting/my");
   };
 

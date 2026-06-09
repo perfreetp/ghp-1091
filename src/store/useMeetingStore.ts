@@ -11,6 +11,7 @@ interface MeetingState {
     date: string;
     capacity: number;
     equipment: string[];
+    keyword: string;
   };
   setFilters: (filters: Partial<MeetingState["filters"]>) => void;
   addBooking: (
@@ -30,6 +31,7 @@ export const useMeetingStore = create<MeetingState>((set, get) => ({
     date: new Date().toISOString().slice(0, 10),
     capacity: 0,
     equipment: [],
+    keyword: "",
   },
 
   setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
@@ -69,11 +71,23 @@ export const useMeetingStore = create<MeetingState>((set, get) => ({
 
   getFilteredRooms: () => {
     const { rooms, filters } = get();
+    const keyword = filters.keyword.trim().toLowerCase();
     return rooms.filter((room) => {
       if (filters.capacity > 0 && room.capacity < filters.capacity) return false;
       if (filters.equipment.length > 0) {
         const hasAll = filters.equipment.every((eq) => room.equipment.includes(eq));
         if (!hasAll) return false;
+      }
+      if (keyword) {
+        const nameMatch = room.name.toLowerCase().includes(keyword);
+        const floorNum = room.floor.replace(/[Ff楼]/g, "");
+        const floorMatch =
+          room.floor.toLowerCase().includes(keyword) ||
+          floorNum.includes(keyword.replace(/[Ff楼]/g, ""));
+        const equipmentMatch = room.equipment.some((eq) =>
+          eq.toLowerCase().includes(keyword)
+        );
+        if (!nameMatch && !floorMatch && !equipmentMatch) return false;
       }
       return true;
     });

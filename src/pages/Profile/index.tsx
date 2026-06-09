@@ -52,6 +52,7 @@ export default function Profile() {
         {
           icon: Package,
           label: "我的快递",
+          path: "/express",
         },
         {
           icon: Bell,
