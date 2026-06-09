@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   MapPin,
   ImagePlus,
@@ -29,9 +29,11 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export default function RepairSubmit() {
   const navigate = useNavigate();
+  const routeLocation = useLocation();
   const [searchParams] = useSearchParams();
   const categoryId = searchParams.get("category");
   const category = repairCategories.find((c) => c.id === categoryId);
+  const fromList = (routeLocation.state as any)?.fromList === true;
 
   const { addOrder } = useRepairStore();
   const addMessage = useMessageStore((s) => s.addMessage);
@@ -89,7 +91,11 @@ export default function RepairSubmit() {
       relatedId: order.id,
     });
 
-    navigate("/repair");
+    if (fromList) {
+      navigate("/repair/list", { state: { highlightId: order.id } });
+    } else {
+      navigate("/repair");
+    }
   };
 
   return (

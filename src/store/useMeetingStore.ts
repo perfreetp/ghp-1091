@@ -71,24 +71,39 @@ export const useMeetingStore = create<MeetingState>((set, get) => ({
 
   getFilteredRooms: () => {
     const { rooms, filters } = get();
-    const keyword = filters.keyword.trim().toLowerCase();
+    const keyword = filters.keyword.trim().toLowerCase().replace(/\s+/g, "");
     return rooms.filter((room) => {
-      if (filters.capacity > 0 && room.capacity < filters.capacity) return false;
+      let requiredCapacity = filters.capacity;
+      let pureKeyword = keyword;
+
+      if (keyword) {
+        const numMatch = keyword.match(/(\d+)人/);
+        const minCapacity = numMatch ? parseInt(numMatch[1]) : 0;
+        requiredCapacity = Math.max(minCapacity, filters.capacity);
+        pureKeyword = keyword.replace(/\d+人/g, "");
+      }
+
+      if (requiredCapacity > 0 && room.capacity < requiredCapacity) return false;
+
       if (filters.equipment.length > 0) {
         const hasAll = filters.equipment.every((eq) => room.equipment.includes(eq));
         if (!hasAll) return false;
       }
-      if (keyword) {
-        const nameMatch = room.name.toLowerCase().includes(keyword);
+
+      if (pureKeyword) {
+        const nameMatch = room.name.toLowerCase().includes(pureKeyword);
         const floorNum = room.floor.replace(/[Ff楼]/g, "");
+        const keywordFloorNum = pureKeyword.replace(/[Ff楼]/g, "");
         const floorMatch =
-          room.floor.toLowerCase().includes(keyword) ||
-          floorNum.includes(keyword.replace(/[Ff楼]/g, ""));
+          room.floor.toLowerCase().includes(pureKeyword) ||
+          floorNum === keywordFloorNum ||
+          floorNum.includes(keywordFloorNum);
         const equipmentMatch = room.equipment.some((eq) =>
-          eq.toLowerCase().includes(keyword)
+          eq.toLowerCase().includes(pureKeyword)
         );
         if (!nameMatch && !floorMatch && !equipmentMatch) return false;
       }
+
       return true;
     });
   },

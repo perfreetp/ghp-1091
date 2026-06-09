@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Users, Projector, Presentation, Video, ChevronRight, ClipboardList, Search, X } from "lucide-react";
+import { Calendar, Users, Projector, Presentation, Video, ChevronRight, ClipboardList, Search, X, Bell } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useMeetingStore } from "@/store/useMeetingStore";
+import { useMessageStore } from "@/store/useMessageStore";
 import { getDateLabel, formatDate } from "@/utils/date";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ const equipmentIcons: Record<string, React.ReactNode> = {
 export default function MeetingIndex() {
   const navigate = useNavigate();
   const { filters, setFilters, getFilteredRooms } = useMeetingStore();
+  const unreadCount = useMessageStore((s) => s.getUnreadCount());
   const rooms = getFilteredRooms();
   const [showSearch, setShowSearch] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +86,17 @@ export default function MeetingIndex() {
             >
               <ClipboardList size={20} className="text-gray-600" />
             </button>
+            <button
+              onClick={() => navigate("/profile/messages")}
+              className="relative w-10 h-10 -mr-2 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            >
+              <Bell size={20} className="text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-accent-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
           </div>
         }
       />
@@ -104,7 +117,7 @@ export default function MeetingIndex() {
               type="text"
               value={filters.keyword}
               onChange={(e) => setFilters({ keyword: e.target.value })}
-              placeholder="搜索名称/楼层/设备，如：创新厅/18F/投影仪"
+              placeholder="搜索名称/楼层/设备/人数，如：创新厅/18F/投影仪/6人"
               className="w-full h-11 pl-10 pr-12 bg-gray-50 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-primary-300 transition-shadow"
             />
             <button

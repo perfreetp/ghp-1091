@@ -27,13 +27,17 @@ export const useRepairStore = create<RepairState>((set, get) => ({
   feedbacks: storage.get("comfortFeedbacks", [] as ComfortFeedback[]),
 
   addOrder: (order) => {
+    const createTime = new Date().toISOString().slice(0, 16).replace("T", " ");
     const newOrder: RepairOrder = {
       ...order,
       id: generateOrderId("RO"),
       status: "submitted",
       reporter: "张明",
-      createTime: new Date().toISOString().slice(0, 16).replace("T", " "),
-      updateTime: new Date().toISOString().slice(0, 16).replace("T", " "),
+      createTime,
+      updateTime: createTime,
+      timelineLogs: [
+        { status: "submitted", handler: "系统", time: createTime },
+      ],
     };
     set((state) => {
       const orders = [newOrder, ...state.orders];

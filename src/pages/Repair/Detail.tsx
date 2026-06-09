@@ -241,6 +241,9 @@ export default function RepairDetail() {
               const isActive = idx <= currentStepIndex;
               const isCurrent = idx === currentStepIndex;
               const isLast = idx === visibleSteps.length - 1;
+              const log = order.timelineLogs?.find((l) => l.status === step.key);
+              const handler = log ? log.handler : step.handler(order);
+              const time = log ? log.time : step.time(order);
               return (
                 <div key={step.key} className="relative flex gap-4">
                   <div className="flex flex-col items-center">
@@ -292,7 +295,7 @@ export default function RepairDetail() {
                         isActive ? "text-gray-600" : "text-gray-300"
                       )}
                     >
-                      处理人：{step.handler(order)}
+                      处理人：{handler}
                     </div>
                     <div
                       className={cn(
@@ -300,7 +303,7 @@ export default function RepairDetail() {
                         isActive ? "text-gray-400" : "text-gray-300"
                       )}
                     >
-                      {step.time(order)}
+                      {time}
                     </div>
                   </div>
                 </div>

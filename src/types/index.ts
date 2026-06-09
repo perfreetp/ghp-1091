@@ -77,6 +77,12 @@ export interface MeetingBooking {
   createTime: string;
 }
 
+export interface TimelineLog {
+  status: string;
+  handler: string;
+  time: string;
+}
+
 export interface RepairOrder {
   id: string;
   category: string;
@@ -88,6 +94,7 @@ export interface RepairOrder {
   createTime: string;
   updateTime: string;
   handler?: string;
+  timelineLogs?: TimelineLog[];
 }
 
 export interface ParkingSpot {

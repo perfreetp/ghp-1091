@@ -85,7 +85,7 @@ export default function Parking() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <PageHeader title="停车服务" />
+      <PageHeader title="停车服务" showBell />
 
       <div className="p-4 space-y-4">
         {currentRecord && (

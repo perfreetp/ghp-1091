@@ -223,6 +223,12 @@ export const mockBookings: MeetingBooking[] = [
   },
 ];
 
+const addHours = (dateStr: string, hours: number): string => {
+  const date = new Date(dateStr.replace(" ", "T"));
+  date.setHours(date.getHours() + hours);
+  return date.toISOString().slice(0, 16).replace("T", " ");
+};
+
 export const mockRepairOrders: RepairOrder[] = [
   {
     id: "RO001",
@@ -235,6 +241,11 @@ export const mockRepairOrders: RepairOrder[] = [
     createTime: "2026-06-09 10:15",
     updateTime: "2026-06-09 11:00",
     handler: "李师傅",
+    timelineLogs: [
+      { status: "submitted", handler: "系统", time: "2026-06-09 10:15" },
+      { status: "accepted", handler: "王师傅", time: addHours("2026-06-09 10:15", 1) },
+      { status: "processing", handler: "李工程师", time: addHours("2026-06-09 10:15", 4) },
+    ],
   },
   {
     id: "RO002",
@@ -247,6 +258,12 @@ export const mockRepairOrders: RepairOrder[] = [
     createTime: "2026-06-07 14:30",
     updateTime: "2026-06-07 17:00",
     handler: "王师傅",
+    timelineLogs: [
+      { status: "submitted", handler: "系统", time: "2026-06-07 14:30" },
+      { status: "accepted", handler: "王师傅", time: addHours("2026-06-07 14:30", 1) },
+      { status: "processing", handler: "李工程师", time: addHours("2026-06-07 14:30", 4) },
+      { status: "completed", handler: "李工程师", time: addHours("2026-06-07 14:30", 24) },
+    ],
   },
   {
     id: "RO003",
@@ -258,6 +275,9 @@ export const mockRepairOrders: RepairOrder[] = [
     status: "submitted",
     createTime: "2026-06-09 15:00",
     updateTime: "2026-06-09 15:00",
+    timelineLogs: [
+      { status: "submitted", handler: "系统", time: "2026-06-09 15:00" },
+    ],
   },
 ];
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   FileCheck,
@@ -6,9 +7,7 @@ import {
   Wrench,
   Settings,
   CheckCheck,
-  X,
   Clock,
-  CheckCircle2,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useMessageStore } from "@/store/useMessageStore";
@@ -41,10 +40,10 @@ const typeNameMap: Record<string, string> = {
 };
 
 export default function Messages() {
+  const navigate = useNavigate();
   const { messages, markAsRead, markAllAsRead } = useMessageStore();
 
   const [activeTab, setActiveTab] = useState<MessageTab>("all");
-  const [selectedMessage, setSelectedMessage] = useState<SystemMessage | null>(null);
 
   const filteredMessages = useMemo(() => {
     if (activeTab === "all") return messages;
@@ -60,11 +59,36 @@ export default function Messages() {
     return { Icon, ...config };
   };
 
+  const getNavigatePath = (msg: SystemMessage): string => {
+    switch (msg.type) {
+      case "approval":
+        return "/access";
+      case "notice":
+        if (msg.content.includes("访客")) {
+          return "/visitor";
+        }
+        return "/home";
+      case "booking":
+        return "/meeting/my";
+      case "repair":
+        if (msg.relatedId) {
+          return `/repair/${msg.relatedId}`;
+        }
+        return "/repair/list";
+      case "system":
+      default:
+        return "/home";
+    }
+  };
+
   const handleMessageClick = (msg: SystemMessage) => {
     if (!msg.isRead) {
       markAsRead(msg.id);
     }
-    setSelectedMessage({ ...msg, isRead: true });
+    const path = getNavigatePath(msg);
+    setTimeout(() => {
+      navigate(path);
+    }, 100);
   };
 
   return (
@@ -189,84 +213,6 @@ export default function Messages() {
           </div>
         )}
       </div>
-
-      {selectedMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md max-h-[80vh] overflow-hidden animate-slide-up flex flex-col">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                {(() => {
-                  const { Icon, color, bg } = getTypeIcon(selectedMessage.type);
-                  return (
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${bg}`}
-                    >
-                      <Icon size={18} className={color} />
-                    </div>
-                  );
-                })()}
-                <span className="font-semibold text-gray-800">消息详情</span>
-              </div>
-              <button
-                onClick={() => setSelectedMessage(null)}
-                className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <span
-                  className={`text-xs px-2.5 py-1 rounded-full ${
-                    getTypeIcon(selectedMessage.type).bg
-                  } ${getTypeIcon(selectedMessage.type).color} font-medium`}
-                >
-                  {typeNameMap[selectedMessage.type] || "系统"}
-                </span>
-                <span className="text-xs text-gray-400 flex items-center gap-1">
-                  <Clock size={12} />
-                  {selectedMessage.createTime}
-                </span>
-                {selectedMessage.isRead && (
-                  <span className="text-xs text-success-600 flex items-center gap-1 ml-auto">
-                    <CheckCircle2 size={12} />
-                    已读
-                  </span>
-                )}
-              </div>
-
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {selectedMessage.title}
-              </h2>
-
-              <div className="bg-gray-50 rounded-2xl p-4">
-                <p className="text-gray-700 leading-relaxed">
-                  {selectedMessage.content}
-                </p>
-              </div>
-
-              {selectedMessage.relatedId && (
-                <div className="mt-4 p-4 bg-primary-50 rounded-2xl border border-primary-100">
-                  <div className="text-xs text-gray-500 mb-1">关联编号</div>
-                  <div className="font-mono font-semibold text-primary-800">
-                    {selectedMessage.relatedId}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-5 border-t border-gray-100">
-              <button
-                onClick={() => setSelectedMessage(null)}
-                className="w-full bg-primary-800 text-white font-semibold py-3.5 rounded-xl hover:bg-primary-900 transition-colors"
-              >
-                我知道了
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Bell, Search } from "lucide-react";
+import { useMessageStore } from "@/store/useMessageStore";
 
 interface PageHeaderProps {
   title: string;
@@ -19,6 +20,7 @@ export default function PageHeader({
   onSearch,
 }: PageHeaderProps) {
   const navigate = useNavigate();
+  const unreadCount = useMessageStore((s) => s.getUnreadCount());
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
@@ -44,8 +46,16 @@ export default function PageHeader({
             </button>
           )}
           {showBell && (
-            <button className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors">
+            <button
+              onClick={() => navigate("/profile/messages")}
+              className="relative w-10 h-10 -mr-2 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            >
               <Bell size={20} className="text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-accent-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           )}
           {rightContent}
