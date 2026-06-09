@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
-import { QrCode, FileCheck, User, Plus, RefreshCw, Clock, MapPin } from "lucide-react";
+import { QrCode, FileCheck, User, Plus, RefreshCw, Clock, MapPin, Check, X, Ticket, AlertCircle } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useAccessStore } from "@/store/useAccessStore";
 import { getStatusText } from "@/utils/format";
@@ -23,8 +23,11 @@ export default function Access() {
   const initialTab = searchParams.get("tab") as TabKey | null;
   const highlightId = searchParams.get("highlightId");
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab === "temp" ? "temp" : "qrcode");
-  const { qrToken, lastRefresh, refreshQr, tempRequests, records } = useAccessStore();
+  const { qrToken, lastRefresh, refreshQr, tempRequests, records, approveTempRequest, rejectTempRequest } = useAccessStore();
   const [countdown, setCountdown] = useState(60);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [rejectModal, setRejectModal] = useState<{ id: string; open: boolean }>({ id: "", open: false });
+  const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => {
     setCountdown(60);
@@ -87,8 +90,38 @@ export default function Access() {
     </div>
   );
 
+  const handleApprove = (id: string) => {
+    if (!window.confirm("确认通过此临时通行申请？")) return;
+    approveTempRequest(id);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleRejectClick = (id: string) => {
+    setRejectModal({ id, open: true });
+    setRejectReason("");
+  };
+
+  const handleConfirmReject = () => {
+    const reason = rejectReason.trim();
+    if (!reason) {
+      alert("请填写拒绝原因");
+      return;
+    }
+    rejectTempRequest(rejectModal.id, reason);
+    setRejectModal({ id: "", open: false });
+    setRejectReason("");
+    setRefreshKey((k) => k + 1);
+  };
+
   const renderTempTab = () => (
-    <div className="p-4 space-y-3">
+    <div className="p-4 space-y-3" key={refreshKey}>
+      <div className="mb-2 px-2 py-2 rounded-xl bg-primary-50 border border-primary-100">
+        <p className="text-xs text-primary-700 flex items-center gap-1.5">
+          <AlertCircle size={14} />
+          您是管理员/前台？在此模拟审批流程（演示功能）
+        </p>
+      </div>
+
       <button
         onClick={() => navigate("/access/temp")}
         className="w-full card card-hover p-4 flex items-center justify-between border-2 border-dashed border-primary-200 bg-primary-50/50"
@@ -148,8 +181,89 @@ export default function Access() {
                 </div>
               )}
             </div>
+
+            {req.status === "approved" && req.accessToken && (
+              <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-success-50 to-accent-50 border border-success-200">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Ticket size={14} className="text-success-600" />
+                  <span className="text-xs font-semibold text-success-700">通行凭证</span>
+                </div>
+                <p className="text-2xl font-bold tracking-[0.25em] text-success-700 font-mono">
+                  {req.accessToken}
+                </p>
+                {req.approvedTime && (
+                  <p className="text-xs text-gray-400 mt-1.5">审批时间：{req.approvedTime}</p>
+                )}
+              </div>
+            )}
+
+            {req.status === "rejected" && req.rejectReason && (
+              <div className="mt-4 p-3 rounded-xl bg-danger-50 border border-danger-200">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={14} className="text-danger-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-xs font-semibold text-danger-700">拒绝原因</span>
+                    <p className="text-sm text-danger-600 mt-1">{req.rejectReason}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {req.status === "pending" && (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleApprove(req.id)}
+                  className="py-2.5 rounded-xl bg-success-500 text-white text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-success-600 active:bg-success-700 transition-colors"
+                >
+                  <Check size={16} />
+                  通过
+                </button>
+                <button
+                  onClick={() => handleRejectClick(req.id)}
+                  className="py-2.5 rounded-xl border-2 border-danger-500 text-danger-600 text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-danger-50 active:bg-danger-100 transition-colors"
+                >
+                  <X size={16} />
+                  拒绝
+                </button>
+              </div>
+            )}
           </div>
         ))
+      )}
+
+      {rejectModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl animate-slide-up">
+            <div className="text-center mb-4">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-danger-500/10 flex items-center justify-center">
+                <AlertCircle size={28} className="text-danger-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800">拒绝临时通行</h3>
+              <p className="text-sm text-gray-500 mt-1.5">请填写拒绝原因，申请人将收到通知</p>
+            </div>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="请输入拒绝原因..."
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-danger-400 focus:ring-4 focus:ring-danger-500/10 outline-none transition-all text-sm resize-none"
+            />
+            <div className="grid grid-cols-2 gap-3 mt-5">
+              <button
+                onClick={() => setRejectModal({ id: "", open: false })}
+                className="py-3 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmReject}
+                className="py-3 rounded-xl bg-danger-500 text-white text-sm font-medium hover:bg-danger-600 active:bg-danger-700 transition-colors"
+              >
+                确认拒绝
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

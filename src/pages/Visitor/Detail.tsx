@@ -10,6 +10,9 @@ import {
   User,
   AlertTriangle,
   ArrowLeft,
+  UserCheck,
+  LogOut,
+  CheckCircle2,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useVisitorStore } from "@/store/useVisitorStore";
@@ -26,10 +29,11 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 export default function VisitorDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { visitors, cancelVisitor } = useVisitorStore();
+  const { visitors, cancelVisitor, verifyArrival, registerLeave } = useVisitorStore();
   const visitor = visitors.find((v) => v.id === id);
 
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleShare = () => {
     if (!visitor) return;
@@ -50,6 +54,24 @@ export default function VisitorDetail() {
     cancelVisitor(visitor.id);
     setConfirmCancel(false);
     navigate(-1);
+  };
+
+  const handleVerifyArrival = () => {
+    if (!visitor) return;
+    const result = verifyArrival(visitor.visitCode);
+    if ("error" in result) {
+      alert(result.error);
+      return;
+    }
+    alert(`核验成功！访客 ${result.visitorName} 已到达`);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleRegisterLeave = () => {
+    if (!visitor) return;
+    if (!window.confirm("确认登记离访？")) return;
+    registerLeave(visitor.id);
+    setRefreshKey((k) => k + 1);
   };
 
   if (!visitor) {
@@ -76,9 +98,10 @@ export default function VisitorDetail() {
   const statusConfig = STATUS_CONFIG[visitor.status];
   const avatarSeed = encodeURIComponent(visitor.visitorName);
   const isPending = visitor.status === "pending";
+  const isArrived = visitor.status === "arrived";
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
+    <div className="min-h-screen bg-gray-50 pb-32" key={refreshKey}>
       <PageHeader
         title="访客详情"
         showBack
@@ -171,6 +194,30 @@ export default function VisitorDetail() {
             </div>
           </div>
 
+          {visitor.arriveTime && (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-success-50 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 size={18} className="text-success-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-400 mb-0.5">实际到达时间</p>
+                <p className="text-sm font-medium text-success-700">{visitor.arriveTime}</p>
+              </div>
+            </div>
+          )}
+
+          {visitor.actualLeaveTime && (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <LogOut size={18} className="text-gray-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-400 mb-0.5">实际离开时间</p>
+                <p className="text-sm font-medium text-gray-700">{visitor.actualLeaveTime}</p>
+              </div>
+            </div>
+          )}
+
           {visitor.plateNumber && (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
@@ -201,19 +248,40 @@ export default function VisitorDetail() {
 
       {isPending && (
         <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 safe-bottom z-40">
-          <div className="max-w-lg mx-auto grid grid-cols-2 gap-3">
+          <div className="max-w-lg mx-auto grid grid-cols-3 gap-3">
             <button
               onClick={() => setConfirmCancel(true)}
-              className="py-3.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              className="py-3 rounded-xl border-2 border-gray-200 text-gray-700 text-xs font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors"
             >
               取消预约
             </button>
             <button
               onClick={handleShare}
-              className="py-3.5 rounded-xl gradient-primary text-white text-sm font-medium shadow-md shadow-primary-800/20 flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all"
+              className="py-3 rounded-xl bg-primary-50 text-primary-700 text-xs font-medium border-2 border-primary-100 hover:bg-primary-100 transition-colors flex items-center justify-center gap-1.5"
             >
-              <Share2 size={18} />
+              <Share2 size={16} />
               分享到访码
+            </button>
+            <button
+              onClick={handleVerifyArrival}
+              className="py-3 rounded-xl gradient-primary text-white text-xs font-medium shadow-md shadow-primary-800/20 flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all"
+            >
+              <UserCheck size={16} />
+              模拟前台核验
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isArrived && (
+        <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 safe-bottom z-40">
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={handleRegisterLeave}
+              className="w-full py-3.5 rounded-xl border-2 border-danger-500 text-danger-600 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-danger-50 active:bg-danger-100 transition-colors"
+            >
+              <LogOut size={18} />
+              登记离访
             </button>
           </div>
         </div>

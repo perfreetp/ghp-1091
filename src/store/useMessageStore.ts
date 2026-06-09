@@ -7,6 +7,11 @@ interface MessageState {
   messages: SystemMessage[];
   deliveries: ExpressDelivery[];
   addMessage: (params: { type: SystemMessage["type"]; title: string; content: string; relatedId?: string }) => void;
+  updateMessageByRelatedId: (
+    relatedId: string,
+    type: "repair",
+    updates: { title?: string; content?: string }
+  ) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   pickUpDelivery: (id: string) => void;
@@ -30,6 +35,25 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         createTime: new Date().toLocaleString("zh-CN", { hour12: false }),
       };
       const messages = [newMessage, ...state.messages];
+      storage.set("messages", messages);
+      return { messages };
+    }),
+
+  updateMessageByRelatedId: (relatedId, type, updates) =>
+    set((state) => {
+      const targetIndex = state.messages.findIndex(
+        (m) => m.relatedId === relatedId && m.type === type
+      );
+      if (targetIndex === -1) return state;
+      const messages = state.messages.map((m, idx) =>
+        idx === targetIndex
+          ? {
+              ...m,
+              title: updates.title ?? m.title,
+              content: updates.content ?? m.content,
+            }
+          : m
+      );
       storage.set("messages", messages);
       return { messages };
     }),

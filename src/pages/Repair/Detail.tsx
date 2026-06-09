@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -13,12 +13,16 @@ import {
   ChevronRight,
   Megaphone,
   Star,
+  MessageSquare,
+  Image as ImageIcon,
+  Send,
+  Camera,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useRepairStore } from "@/store/useRepairStore";
 import { getStatusText } from "@/utils/format";
 import { cn } from "@/lib/utils";
-import type { RepairOrder } from "@/types";
+import type { RepairOrder, CommunicationMessage } from "@/types";
 
 const statusColorMap: Record<string, string> = {
   submitted: "bg-blue-500",
@@ -121,15 +125,69 @@ const renderStars = (rating: number, size: number = 20) => {
 export default function RepairDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { orders, updateOrder, urgeOrder, evaluateOrder } = useRepairStore();
+  const { orders, updateOrder, urgeOrder, evaluateOrder, completeOrder, addCommunication } = useRepairStore();
   const [refreshKey, setRefreshKey] = useState(0);
   const order = orders.find((o) => o.id === id);
 
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [previewCommImages, setPreviewCommImages] = useState<{ images: string[]; index: number } | null>(null);
   const [confirmUrge, setConfirmUrge] = useState(false);
   const [rating, setRating] = useState(0);
   const [evaluation, setEvaluation] = useState("");
   const [submittingEval, setSubmittingEval] = useState(false);
+  const [commContent, setCommContent] = useState("");
+  const [commImages, setCommImages] = useState<string[]>([]);
+  const commEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    commEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [order?.communications?.length, refreshKey]);
+
+  const handleCommImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const remaining = 3 - commImages.length;
+    const toProcess = Array.from(files).slice(0, remaining);
+    toProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        if (result) {
+          setCommImages((prev) => [...prev, result].slice(0, 3));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const handleRemoveCommImage = (idx: number) => {
+    setCommImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSendComm = () => {
+    if (!order) return;
+    const trimmed = commContent.trim();
+    if (!trimmed && commImages.length === 0) return;
+    addCommunication(order.id, {
+      sender: "user",
+      senderName: "张明",
+      content: trimmed,
+      images: commImages.length > 0 ? [...commImages] : undefined,
+    });
+    setCommContent("");
+    setCommImages([]);
+    setTimeout(() => setRefreshKey((k) => k + 1), 3100);
+  };
+
+  const handleComplete = () => {
+    if (!order) return;
+    if (confirm("确认标记此工单为维修完成？")) {
+      completeOrder(order.id);
+      setRefreshKey((k) => k + 1);
+    }
+  };
 
   const getTimelineIndex = (status: string) => {
     const visibleSteps = timelineSteps.filter((s) => s.show(order!));
@@ -359,6 +417,170 @@ export default function RepairDetail() {
         </div>
       </div>
 
+      {["submitted", "accepted", "processing", "completed"].includes(order.status) && (
+        <div className="px-4 pt-4">
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <MessageSquare size={16} className="text-primary-500" />
+              <span>维修沟通</span>
+            </div>
+
+            <div className="space-y-4 mb-4 max-h-80 overflow-y-auto pr-1 -mr-1">
+              {(order.communications || []).length === 0 ? (
+                <div className="py-8 text-center text-sm text-gray-400">
+                  暂无沟通记录，有问题可给维修人员留言~
+                </div>
+              ) : (
+                (order.communications || []).map((msg: CommunicationMessage) => {
+                  const isUser = msg.sender === "user";
+                  return (
+                    <div
+                      key={msg.id}
+                      className={cn("flex gap-2.5", isUser ? "flex-row-reverse" : "flex-row")}
+                    >
+                      <div
+                        className={cn(
+                          "w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold",
+                          isUser ? "bg-primary-500" : "bg-cyan-500"
+                        )}
+                      >
+                        {msg.senderName.slice(0, 1)}
+                      </div>
+                      <div
+                        className={cn(
+                          "flex flex-col gap-1 max-w-[75%]",
+                          isUser ? "items-end" : "items-start"
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                          <span>{msg.senderName}</span>
+                          <span>{msg.time.slice(-5)}</span>
+                        </div>
+                        {msg.content && (
+                          <div
+                            className={cn(
+                              "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                              isUser
+                                ? "bg-primary-500 text-white rounded-tr-md"
+                                : "bg-gray-100 text-gray-800 rounded-tl-md"
+                            )}
+                          >
+                            {msg.content}
+                          </div>
+                        )}
+                        {msg.images && msg.images.length > 0 && (
+                          <div
+                            className={cn(
+                              "grid grid-cols-3 gap-1.5 mt-1",
+                              isUser ? "justify-items-end" : "justify-items-start"
+                            )}
+                            style={{
+                              gridTemplateColumns: `repeat(${Math.min(msg.images.length, 3)}, 64px)`,
+                            }}
+                          >
+                            {msg.images.map((img, i) => (
+                              <button
+                                key={i}
+                                onClick={() =>
+                                  setPreviewCommImages({ images: msg.images!, index: i })
+                                }
+                                className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 hover:opacity-90 transition-opacity"
+                              >
+                                <img
+                                  src={img}
+                                  alt={`图片${i + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={commEndRef} />
+            </div>
+
+            {["submitted", "accepted", "processing"].includes(order.status) && (
+              <div className="border-t border-gray-100 pt-4">
+                {commImages.length > 0 && (
+                  <div className="flex gap-2 mb-3 flex-wrap">
+                    {commImages.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100"
+                      >
+                        <img
+                          src={img}
+                          alt={`预览${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={() => handleRemoveCommImage(idx)}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-700/80 text-white text-xs flex items-center justify-center hover:bg-gray-800"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 relative">
+                    <textarea
+                      value={commContent}
+                      onChange={(e) => setCommContent(e.target.value.slice(0, 200))}
+                      placeholder="补充说明故障情况、上传更多照片..."
+                      rows={2}
+                      className="w-full p-3 pr-12 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder-gray-400 resize-none focus:outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 transition-all"
+                    />
+                    <div className="absolute right-2 bottom-2">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={commImages.length >= 3}
+                        className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                          commImages.length >= 3
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "text-gray-400 hover:text-primary-500 hover:bg-primary-50"
+                        )}
+                      >
+                        <Camera size={18} />
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleCommImageUpload}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSendComm}
+                    disabled={!commContent.trim() && commImages.length === 0}
+                    className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all",
+                      !commContent.trim() && commImages.length === 0
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "gradient-primary text-white shadow-md shadow-primary-800/20 hover:opacity-95 active:scale-95"
+                    )}
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+                <div className="mt-1 text-right text-xs text-gray-400">
+                  {commContent.length}/200
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {showEvaluatedCard && (
         <div className="px-4 pt-4 pb-20">
           <div className="bg-white rounded-2xl p-5 shadow-sm">
@@ -497,9 +719,58 @@ export default function RepairDetail() {
           </div>
         )}
 
+      {previewCommImages !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setPreviewCommImages(null)}
+        >
+          <button
+            onClick={() => setPreviewCommImages(null)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          >
+            <X size={24} />
+          </button>
+          {previewCommImages.index > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewCommImages((p) =>
+                  p ? { ...p, index: (p.index - 1 + p.images.length) % p.images.length } : p
+                );
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          )}
+          <img
+            src={previewCommImages.images[previewCommImages.index]}
+            alt={`图片${previewCommImages.index + 1}`}
+            className="max-w-full max-h-[80vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {previewCommImages.index < previewCommImages.images.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewCommImages((p) =>
+                  p ? { ...p, index: (p.index + 1) % p.images.length } : p
+                );
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight size={24} />
+            </button>
+          )}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/80 text-sm">
+            {previewCommImages.index + 1} / {previewCommImages.images.length}
+          </div>
+        </div>
+      )}
+
       {canCancelOrUrge && (
         <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-4 py-3 z-40">
-          <div className="max-w-lg mx-auto grid grid-cols-2 gap-3">
+          <div className="max-w-lg mx-auto grid grid-cols-3 gap-3">
             <div className="relative">
               <button
                 onClick={() => setConfirmUrge(true)}
@@ -519,9 +790,27 @@ export default function RepairDetail() {
                 </p>
               )}
             </div>
+            {order.status === "processing" && (
+              <button
+                onClick={handleComplete}
+                className="py-3 rounded-xl text-white text-sm font-medium bg-green-500 hover:bg-green-600 active:bg-green-700 shadow-md shadow-green-200 transition-all"
+              >
+                标记完成
+              </button>
+            )}
             <button
               onClick={handleCancel}
-              className="py-3 rounded-xl text-white text-sm font-medium bg-danger-500 hover:bg-danger-600 active:bg-danger-700 shadow-md shadow-danger-200 transition-all"
+              className={cn(
+                "py-3 rounded-xl text-white text-sm font-medium shadow-md transition-all",
+                order.status === "processing"
+                  ? "bg-danger-500 hover:bg-danger-600 active:bg-danger-700 shadow-danger-200"
+                  : "bg-danger-500 hover:bg-danger-600 active:bg-danger-700 shadow-danger-200"
+              )}
+              style={
+                order.status !== "processing"
+                  ? { gridColumn: "2 / span 2" }
+                  : undefined
+              }
             >
               撤销报修
             </button>

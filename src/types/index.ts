@@ -37,6 +37,9 @@ export interface TempAccessRequest {
   reason: string;
   status: "pending" | "approved" | "rejected";
   createTime: string;
+  rejectReason?: string;
+  approvedTime?: string;
+  accessToken?: string;
 }
 
 export interface VisitorReservation {
@@ -45,6 +48,8 @@ export interface VisitorReservation {
   visitorPhone: string;
   visitTime: string;
   leaveTime?: string;
+  arriveTime?: string;
+  actualLeaveTime?: string;
   purpose: string;
   hostName: string;
   visitCode: string;
@@ -83,6 +88,15 @@ export interface TimelineLog {
   time: string;
 }
 
+export interface CommunicationMessage {
+  id: string;
+  sender: "user" | "staff";
+  senderName: string;
+  content: string;
+  images?: string[];
+  time: string;
+}
+
 export interface RepairOrder {
   id: string;
   category: string;
@@ -100,6 +114,7 @@ export interface RepairOrder {
   rating?: number;
   evaluation?: string;
   evaluatedTime?: string;
+  communications?: CommunicationMessage[];
 }
 
 export interface ParkingSpot {

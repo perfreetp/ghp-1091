@@ -229,6 +229,12 @@ const addHours = (dateStr: string, hours: number): string => {
   return date.toISOString().slice(0, 16).replace("T", " ");
 };
 
+const addMinutes = (dateStr: string, minutes: number): string => {
+  const date = new Date(dateStr.replace(" ", "T"));
+  date.setMinutes(date.getMinutes() + minutes);
+  return date.toISOString().slice(0, 16).replace("T", " ");
+};
+
 export const mockRepairOrders: RepairOrder[] = [
   {
     id: "RO001",
@@ -247,6 +253,24 @@ export const mockRepairOrders: RepairOrder[] = [
       { status: "submitted", handler: "系统", time: "2026-06-09 10:15" },
       { status: "accepted", handler: "王师傅", time: addHours("2026-06-09 10:15", 1) },
       { status: "processing", handler: "李工程师", time: addHours("2026-06-09 10:15", 4) },
+    ],
+    communications: [
+      {
+        id: "CM-001",
+        sender: "user",
+        senderName: "张明",
+        content: "麻烦尽快过来，这边办公室有点热",
+        images: [],
+        time: addMinutes("2026-06-09 10:15", 30),
+      },
+      {
+        id: "CM-002",
+        sender: "staff",
+        senderName: "李工程师",
+        content: "您好，已收到消息，预计20分钟到达现场",
+        images: [],
+        time: addMinutes("2026-06-09 10:15", 32),
+      },
     ],
   },
   {
